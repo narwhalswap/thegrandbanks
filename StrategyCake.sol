@@ -1469,7 +1469,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
     address public earnedAddress;
     address public uniRouterAddress; // uniswap, pancakeswap etc
 
-    address public constant wbnbAddress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address public GrandFarmAddress;
     address public GrandAddress;
     address public govAddress; // timelock contract
@@ -1498,6 +1498,11 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
     address[] public token1ToEarnedPath;
 
     event updateShare(uint256 _wantLockedTotal, uint256 _shareTotal);
+    event SetGov(address _govAddress);
+    event SetOnlyGov(bool _onlyGov);
+    event SetEntranceFeeFactor(uint256 _entranceFeeFactor);
+    event SetControllerFee(uint256 _controllerFee);
+    event SetbuyBackRate(uint256 _buyBackRate);
 
     constructor(
         address _GrandFarmAddress,
@@ -1510,6 +1515,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
         address _earnedAddress,
         address _uniRouterAddress
     ) public {
+        require(_GrandFarmAddress != address(0), "_GrandFarmAddress is zero address");
         govAddress = msg.sender;
         GrandFarmAddress = _GrandFarmAddress;
         GrandAddress = _GrandAddress;
@@ -1530,29 +1536,29 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
 
             uniRouterAddress = _uniRouterAddress;
 
-            earnedToGrandPath = [earnedAddress, wbnbAddress, GrandAddress];
-            if (wbnbAddress == earnedAddress) {
-                earnedToGrandPath = [wbnbAddress, GrandAddress];
+            earnedToGrandPath = [earnedAddress, WBNB, GrandAddress];
+            if (WBNB == earnedAddress) {
+                earnedToGrandPath = [WBNB, GrandAddress];
             }
 
-            earnedToToken0Path = [earnedAddress, wbnbAddress, token0Address];
-            if (wbnbAddress == token0Address) {
-                earnedToToken0Path = [earnedAddress, wbnbAddress];
+            earnedToToken0Path = [earnedAddress, WBNB, token0Address];
+            if (WBNB == token0Address) {
+                earnedToToken0Path = [earnedAddress, WBNB];
             }
 
-            earnedToToken1Path = [earnedAddress, wbnbAddress, token1Address];
-            if (wbnbAddress == token1Address) {
-                earnedToToken1Path = [earnedAddress, wbnbAddress];
+            earnedToToken1Path = [earnedAddress, WBNB, token1Address];
+            if (WBNB == token1Address) {
+                earnedToToken1Path = [earnedAddress, WBNB];
             }
 
-            token0ToEarnedPath = [token0Address, wbnbAddress, earnedAddress];
-            if (wbnbAddress == token0Address) {
-                token0ToEarnedPath = [wbnbAddress, earnedAddress];
+            token0ToEarnedPath = [token0Address, WBNB, earnedAddress];
+            if (WBNB == token0Address) {
+                token0ToEarnedPath = [WBNB, earnedAddress];
             }
 
-            token1ToEarnedPath = [token1Address, wbnbAddress, earnedAddress];
-            if (wbnbAddress == token1Address) {
-                token1ToEarnedPath = [wbnbAddress, earnedAddress];
+            token1ToEarnedPath = [token1Address, WBNB, earnedAddress];
+            if (WBNB == token1Address) {
+                token1ToEarnedPath = [WBNB, earnedAddress];
             }
         }
 
@@ -1561,7 +1567,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
 
     // Receives new deposits from user
     function deposit(address , uint256 _wantAmt)
-        public
+        external
         onlyOwner
         whenNotPaused
         returns (uint256)
@@ -1591,7 +1597,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
         return sharesAdded;
     }
 
-    function farm() public nonReentrant {
+    function farm() external nonReentrant {
         _farm();
     }
 
@@ -1650,7 +1656,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
     // 2. Converts farm tokens into want tokens
     // 3. Deposits want tokens
 
-    function earn() public whenNotPaused {
+    function earn() external whenNotPaused {
         require(isGrandComp, "!isGrandComp");
         if (onlyGov) {
             require(msg.sender == govAddress, "Not authorised");
@@ -1771,7 +1777,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
         return _earnedAmt;
     }
 
-    function convertDustToEarned() public whenNotPaused {
+    function convertDustToEarned() external whenNotPaused {
         require(isGrandComp, "!isGrandComp");
         require(!isCAKEStaking, "isCAKEStaking");
 
@@ -1816,7 +1822,7 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    function pause() public {
+    function pause() external {
         require(msg.sender == govAddress, "Not authorised");
         _pause();
     }
@@ -1826,38 +1832,46 @@ contract StrategyCake is Ownable, ReentrancyGuard, Pausable {
         _unpause();
     }
 
-    function setEntranceFeeFactor(uint256 _entranceFeeFactor) public {
+    function setEntranceFeeFactor(uint256 _entranceFeeFactor) external {
         require(msg.sender == govAddress, "Not authorised");
         require(_entranceFeeFactor > entranceFeeFactorLL, "!safe - too low");
         require(_entranceFeeFactor <= entranceFeeFactorMax, "!safe - too high");
         entranceFeeFactor = _entranceFeeFactor;
+        emit SetEntranceFeeFactor(_entranceFeeFactor);
     }
 
-    function setControllerFee(uint256 _controllerFee) public {
+    function setControllerFee(uint256 _controllerFee) external {
         require(msg.sender == govAddress, "Not authorised");
+        require(_controllerFee <= 20, "_controllerFee too high");
         controllerFee = _controllerFee;
+        emit SetControllerFee(_controllerFee);
     }
 
-    function setbuyBackRate(uint256 _buyBackRate) public {
+    function setbuyBackRate(uint256 _buyBackRate) external {
         require(msg.sender == govAddress, "Not authorised");
+        require(_buyBackRate <= 150, "_buyBackRate too high");
         buyBackRate = _buyBackRate;
+        emit SetbuyBackRate(_buyBackRate);
     }
 
-    function setGov(address _govAddress) public {
+    function setGov(address _govAddress) external {
+        require(_govAddress != address(0), "_GrandFarmAddress is zero address");
         require(msg.sender == govAddress, "!gov");
         govAddress = _govAddress;
+        emit SetGov(_govAddress);
     }
 
-    function setOnlyGov(bool _onlyGov) public {
+    function setOnlyGov(bool _onlyGov) external {
         require(msg.sender == govAddress, "!gov");
         onlyGov = _onlyGov;
+        emit SetOnlyGov(_onlyGov);
     }
 
     function inCaseTokensGetStuck(
         address _token,
         uint256 _amount,
         address _to
-    ) public {
+    ) external {
         require(msg.sender == govAddress, "!gov");
         require(_token != earnedAddress, "!safe");
         require(_token != wantAddress, "!safe");

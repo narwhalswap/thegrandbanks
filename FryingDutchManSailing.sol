@@ -1096,7 +1096,7 @@ library SafeToken {
 
     function safeTransferBNB(address to, uint256 value) internal {
         (bool success, ) = to.call{gas: 23000,value: value}(new bytes(0));
-        require(success, "!safeTransferETH");
+        require(success, "!safeTransferBNB");
     }
 }
 
@@ -1127,6 +1127,7 @@ contract FryingDutchManSailing is Ownable, ReentrancyGuard, FryingDutchMan {
     /// @dev Create a new add two-side optimal strategy instance.
     /// @param _router The Uniswap router smart contract.
     constructor(IPancakeRouter02 _router,address _grandBanks) public {
+        require(_grandBanks != address(0), "_grandBanks is zero address");
         factory = IUniswapV2Factory(_router.factory());
         router = _router;
         wbnb = _router.WETH();

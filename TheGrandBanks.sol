@@ -1093,7 +1093,7 @@ pragma solidity 0.6.12;
 
 
 abstract contract GrandToken is ERC20 {
-    function mint(address _to, uint256 _amount) public virtual;
+    function mint(address _to, uint256 _amount) external virtual;
 }
 
 contract TheGrandBanks is Ownable, ReentrancyGuard {
@@ -1132,16 +1132,16 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     mapping (address => bool) public paidToken;
     address [] public paidTokenAddresses;
 
-    address public GrandV1 = 0xd37eBaEb28c0A6C9a62D5c5c0119d464e28B367E;
-    address public GrandV2 = 0xeE814F5B2bF700D2e843Dc56835D28d095161dd9;
+    address public constant GrandV1 = 0xd37eBaEb28c0A6C9a62D5c5c0119d464e28B367E;
+    address public constant GrandV2 = 0xeE814F5B2bF700D2e843Dc56835D28d095161dd9;
    
-    address public burnAddress = 0x000000000000000000000000000000000000dEaD;
+    address public constant burnAddress = 0x000000000000000000000000000000000000dEaD;
 
-    address public wbnb= 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
-    uint256 public GrandMaxSupply= 30000e18;
-    uint256 public GrandPerBlock = 0.00264 ether; 
-    uint256 public ownerGrandRewardPerBlock = 0.00036 ether;
-    uint256 public startBlock = 6874450;
+    address public constant wbnb= 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    uint256 public constant GrandMaxSupply= 30000e18;
+    uint256 public constant GrandPerBlock = 0.00264 ether; 
+    uint256 public constant ownerGrandRewardPerBlock = 0.00036 ether;
+    uint256 public constant startBlock = 6874450;
     
     PoolInfo[] public poolInfo; // Info of each pool.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo; // Info of each user that stakes LP tokens.
@@ -1176,7 +1176,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
         address _frySailing,
         address _fryLanding,
         bool _isLp
-    ) public onlyOwner {
+    ) external onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -1202,7 +1202,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
         uint256 _pid,
         uint256 _allocPoint,
         bool _withUpdate
-    ) public onlyOwner {
+    ) external onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -1216,12 +1216,12 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
         return paidTokenAddresses.length;
     }
 
-    function addPaidToken(address _paidToken) public onlyOwner{
+    function addPaidToken(address _paidToken) external onlyOwner{
         paidToken[_paidToken] = true;
         paidTokenAddresses.push(_paidToken);
     }
 
-    function removePaidToken(address _paidToken) public onlyOwner{
+    function removePaidToken(address _paidToken) external onlyOwner{
         paidToken[_paidToken] = false;
         for (uint i=0; i < paidTokenAddresses.length ;i++){
             if(paidTokenAddresses[i] == _paidToken){
@@ -1233,7 +1233,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     // Update Strategy
-    function setStrategy(uint256 _pid,address _frySailing,address _fryLanding) public onlyOwner{
+    function setStrategy(uint256 _pid,address _frySailing,address _fryLanding) external onlyOwner{
         poolInfo[_pid].frySailing = _frySailing;
         poolInfo[_pid].fryLanding = _fryLanding;
     }
@@ -1336,7 +1336,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }   
 
     // Use BNB convert to want token then deposit
-    function depositBNB(uint256 _pid) public nonReentrant payable {
+    function depositBNB(uint256 _pid) external nonReentrant payable {
         PoolInfo storage pool = poolInfo[_pid];
         // Check before and after for calculate want balance
         uint256 beforeBalance = pool.want.balanceOf(address(this));        
@@ -1349,7 +1349,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     // Use paidToken convert to want token then deposit
-    function depositToken(uint256 _pid, uint256 _amount, address _paidToken) public allowToken(_paidToken) nonReentrant {
+    function depositToken(uint256 _pid, uint256 _amount, address _paidToken) external allowToken(_paidToken) nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         // Check before and after for calculate want balance
         uint256 beforeBalance = pool.want.balanceOf(address(this));
@@ -1360,7 +1360,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     // Deposit want direct
-    function depositWant(uint256 _pid, uint256 _amount) public nonReentrant {
+    function depositWant(uint256 _pid, uint256 _amount) external nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         pool.want.safeTransferFrom(address(msg.sender), address(this), _amount);
         _deposit(_pid, _amount);
@@ -1391,7 +1391,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     // Withdraw want and convert to BNB
-    function withdrawBNB(uint256 _pid, uint256 wantBalance) public nonReentrant {
+    function withdrawBNB(uint256 _pid, uint256 wantBalance) external nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         // Withdraw want from MasterChef
         uint256 beforeBalance = pool.want.balanceOf(address(this));    
@@ -1405,7 +1405,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     // Withdraw want and convert to paidToken
-    function withdrawToken(uint256 _pid, uint256 wantBalance, address _paidToken) public allowToken(_paidToken) nonReentrant {
+    function withdrawToken(uint256 _pid, uint256 wantBalance, address _paidToken) external allowToken(_paidToken) nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         // Withdraw want from MasterChef
         uint256 beforePoolWantBalance = pool.want.balanceOf(address(this));    
@@ -1421,7 +1421,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     // Withdraw want direct
-    function withdrawWant(uint256 _pid, uint256 wantBalance) public nonReentrant {
+    function withdrawWant(uint256 _pid, uint256 wantBalance) external nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         // Withdraw want from MasterChef
         uint256 beforeBalance = IERC20(pool.want).balanceOf(address(this));        
@@ -1478,7 +1478,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
     
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public nonReentrant {
+    function emergencyWithdraw(uint256 _pid) external nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
@@ -1506,7 +1506,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     function inCaseTokensGetStuck(address _token, uint256 _amount)
-        public
+        external
         onlyOwner
     {
         require(_token != GrandV2, "!safe");
@@ -1514,7 +1514,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
     }
 
     function inCaseBNBGetStuck(uint256 _amount)
-        public
+        external
         onlyOwner
     {
         safeTransferBNB(msg.sender,_amount);
@@ -1525,7 +1525,7 @@ contract TheGrandBanks is Ownable, ReentrancyGuard {
         require(success, "!safeTransferBNB");
     }
 
-    function migrateToGrandV2(uint256 _inputAmt) public {
+    function migrateToGrandV2(uint256 _inputAmt) external {
         require(block.number < 7076050, "too late :(");
         IERC20(GrandV1).safeTransferFrom(
             address(msg.sender),
